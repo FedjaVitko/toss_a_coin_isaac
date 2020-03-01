@@ -1,4 +1,5 @@
-local Mod = RegisterMod("toss_a_coin", 1)
+local TossACoin = RegisterMod("toss_a_coin", 1)
+
 local game = Game();
 local sound = SFXManager();
 local music = MusicManager();
@@ -15,25 +16,25 @@ local direction = {
 TrinketType.TRINKET_TOSS_A_COIN = Isaac.GetTrinketIdByName("toss_a_coin");
 SoundEffect.SOUND_TOSS_A_COIN = Isaac.GetSoundIdByName("toss_a_coin");
 
-Mod.TOSS_POWER = 20;
-Mod.TOSS_ANGLE_MIN = -70;
-Mod.TOSS_ANGLE_MAX = 70;
+TossACoin.TOSS_POWER = 20;
+TossACoin.TOSS_ANGLE_MIN = -70;
+TossACoin.TOSS_ANGLE_MAX = 70;
 
-Mod.PENNY_CHANCE = 10;
+TossACoin.PENNY_CHANCE = 10;
 
-Mod.SOUND_LEVEL = 1;
+TossACoin.SOUND_LEVEL = 1;
 
-Mod.PITCH_INITIAL = 100;
-Mod.PITCH_FINAL = 70;
-Mod.PITCH_STEP = 8;
-Mod.PITCH_UP = 30;
-Mod.PITCH_MAX = 170;
+TossACoin.PITCH_INITIAL = 100;
+TossACoin.PITCH_FINAL = 70;
+TossACoin.PITCH_STEP = 8;
+TossACoin.PITCH_UP = 30;
+TossACoin.PITCH_MAX = 170;
 
-local pitch = Mod.PITCH_INITIAL;
+local pitch = TossACoin.PITCH_INITIAL;
 
 local log = 'debug';
 
-function Mod:initMod()
+function TossACoin:initMod()
   game = Game();
   sound = SFXManager();
   music = MusicManager();
@@ -42,7 +43,7 @@ function Mod:initMod()
   stopSfxAndResumeMusic();
 end
 
-function Mod:tossAConsumable()
+function TossACoin:tossAConsumable()
   if room.IsClear(room) then
     return
   end
@@ -58,7 +59,7 @@ function Mod:tossAConsumable()
       music:Pause();
       sound:Play(
         SoundEffect.SOUND_TOSS_A_COIN,
-        Mod.SOUND_LEVEL,
+        TossACoin.SOUND_LEVEL,
         0,
         true,
         pitch / 100
@@ -74,7 +75,7 @@ function Mod:tossAConsumable()
       entityVariant,
       entitySubType,
       getDirectionToThrowVector(
-        math.random(Mod.TOSS_ANGLE_MIN, Mod.TOSS_ANGLE_MAX),
+        math.random(TossACoin.TOSS_ANGLE_MIN, TossACoin.TOSS_ANGLE_MAX),
         player:GetHeadDirection()
       )
     );
@@ -83,20 +84,20 @@ end
 
 function getDirectionToThrowVector(tossAngle, headDirection)
     local directionToThrowVector = {
-      [direction.LEFT] = Vector(-Mod.TOSS_POWER, tossAngle),
-      [direction.RIGHT] = Vector(Mod.TOSS_POWER, tossAngle),
-      [direction.TOP] = Vector(tossAngle, -Mod.TOSS_POWER),
-      [direction.DOWN] = Vector(tossAngle, Mod.TOSS_POWER)
+      [direction.LEFT] = Vector(-TossACoin.TOSS_POWER, tossAngle),
+      [direction.RIGHT] = Vector(TossACoin.TOSS_POWER, tossAngle),
+      [direction.TOP] = Vector(tossAngle, -TossACoin.TOSS_POWER),
+      [direction.DOWN] = Vector(tossAngle, TossACoin.TOSS_POWER)
     }
 
     return directionToThrowVector[headDirection];
 end
 
-function Mod:adjustSoundOnEnemyKill()
+function TossACoin:adjustSoundOnEnemyKill()
   if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
-    pitch = pitch - Mod.PITCH_STEP;
+    pitch = pitch - TossACoin.PITCH_STEP;
 
-    if (pitch <= Mod.PITCH_FINAL) then
+    if (pitch <= TossACoin.PITCH_FINAL) then
       stopSfxAndResumeMusic();
     else
       adjustPitch();
@@ -106,10 +107,10 @@ function Mod:adjustSoundOnEnemyKill()
   end
 end
 
-function Mod:adjustSoundOnLuckyPennyPickup()
+function TossACoin:adjustSoundOnLuckyPennyPickup()
   if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
     -- TODO: only adjust pitch on lucky penny pickup
-    pitch = math.min(pitch + Mod.PITCH_UP, Mod.PITCH_MAX);
+    pitch = math.min(pitch + TossACoin.PITCH_UP, TossACoin.PITCH_MAX);
 
     adjustPitch();
     changeSpeedInRelationToPitch();
@@ -117,9 +118,9 @@ function Mod:adjustSoundOnLuckyPennyPickup()
 end
 
 function changeSpeedInRelationToPitch()
-  if (pitch < Mod.PITCH_INITIAL) then
+  if (pitch < TossACoin.PITCH_INITIAL) then
     room:SetBrokenWatchState(1) -- slow down
-  elseif (pitch > Mod.PITCH_INITIAL) then
+  elseif (pitch > TossACoin.PITCH_INITIAL) then
     room:SetBrokenWatchState(2) -- speed up
   else
     room:SetBrokenWatchState(0) -- normal speed
@@ -129,7 +130,7 @@ end
 function stopSfxAndResumeMusic()
   sound:Stop(SoundEffect.SOUND_TOSS_A_COIN);
   music:Resume();
-  pitch = Mod.PITCH_INITIAL;
+  pitch = TossACoin.PITCH_INITIAL;
 end
 
 function adjustPitch()
@@ -142,7 +143,7 @@ end
 function willThrowLuckyPenny()
   local willThrow = false;
 
-  if (math.random(0, 100) < Mod.PENNY_CHANCE) then
+  if (math.random(0, 100) < TossACoin.PENNY_CHANCE) then
     willThrow = true;
   end
 
@@ -160,12 +161,29 @@ function toss(entityType, entityVariant, entitySubType, throwVector)
   ); 
 end
 
-function Mod:debug()
+function TossACoin:debug()
   Isaac.RenderText(log, 250, 100, 255, 0, 0, 255)
 end
 
-Mod:AddCallback( ModCallbacks.MC_POST_NEW_ROOM, Mod.tossAConsumable);
-Mod:AddCallback( ModCallbacks.MC_POST_NEW_LEVEL, Mod.initMod);
-Mod:AddCallback( ModCallbacks.MC_POST_NPC_DEATH, Mod.adjustSoundOnEnemyKill);
-Mod:AddCallback( ModCallbacks.MC_PRE_PICKUP_COLLISION, Mod.adjustSoundOnLuckyPennyPickup);
-Mod:AddCallback( ModCallbacks.MC_POST_RENDER, Mod.debug); 
+-- register callbacks
+
+TossACoin:AddCallback(
+  ModCallbacks.MC_POST_NEW_ROOM,
+  TossACoin.tossAConsumable
+);
+TossACoin:AddCallback(
+  ModCallbacks.MC_POST_NEW_LEVEL,
+  TossACoin.initMod
+);
+TossACoin:AddCallback(
+  ModCallbacks.MC_POST_NPC_DEATH,
+  TossACoin.adjustSoundOnEnemyKill
+);
+TossACoin:AddCallback(
+  ModCallbacks.MC_PRE_PICKUP_COLLISION,
+  TossACoin.adjustSoundOnLuckyPennyPickup
+);
+TossACoin:AddCallback(
+  ModCallbacks.MC_POST_RENDER,
+  TossACoin.debug
+); 
