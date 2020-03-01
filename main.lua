@@ -2,6 +2,13 @@ local Mod = RegisterMod("toss_a_coin", 1)
 local game = Game()
 local sound = SFXManager()
 local music = MusicManager()
+local player = Isaac.GetPlayer(0)
+local direction = {
+    LEFT = 0,
+    TOP = 1,
+    RIGHT = 2,
+    DOWN = 3
+}
 
 TrinketType.TRINKET_TOSS_A_COIN = Isaac.GetTrinketIdByName("toss_a_coin");
 SoundEffect.SOUND_TOSS_A_COIN = Isaac.GetSoundIdByName("toss_a_coin");
@@ -12,22 +19,19 @@ Mod.TOSS_ANGLE_MAX = 70;
 
 Mod.PENNY_CHANCE = 20;
 
--- comparing floats is not easy, that's why I chose to go with int
 Mod.PITCH_INITIAL = 100;
 Mod.PITCH_FINAL = 70;
-Mod.PITCH_STEP = 10;
-
-local direction = {
-    LEFT = 0,
-    TOP = 1,
-    RIGHT = 2,
-    DOWN = 3
-}
-local player = Isaac.GetPlayer(0)
+Mod.PITCH_STEP = 8;
+Mod.PITCH_UP = 30;
+Mod.PITCH_MAX = 170;
 
 local pitch = Mod.PITCH_INITIAL;
 
 local debug = 'debug';
+
+function Mod:initMod()
+    stopSfxAndResumeMusic();
+end
 
 function Mod:tossAConsumable()
     local player = Isaac.GetPlayer(0)
@@ -68,15 +72,31 @@ function Mod:adjustSoundOnEnemyKill()
     if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
         pitch = pitch - Mod.PITCH_STEP;
 
-        if (pitch == Mod.PITCH_FINAL) then
-            debug = 'went into the if statement';
-            sound:Stop(SoundEffect.SOUND_TOSS_A_COIN);
-            music:Resume();
-            pitch = Mod.PITCH_INITIAL;
+        if (pitch <= Mod.PITCH_FINAL) then
+            stopSfxAndResumeMusic();
         else
-            sound:AdjustPitch(SoundEffect.SOUND_TOSS_A_COIN, pitch / 100);
+            adjustPitch();
         end
     end
+end
+
+function Mod:adjustSoundOnLuckyPennyPickup()
+    if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
+        -- TODO: only adjust pitch on lucky penny pickup
+        pitch = math.min(pitch + Mod.PITCH_UP, Mod.PITCH_MAX);
+
+        adjustPitch();
+    end
+end
+
+function stopSfxAndResumeMusic()
+    sound:Stop(SoundEffect.SOUND_TOSS_A_COIN);
+    music:Resume();
+    pitch = Mod.PITCH_INITIAL;
+end
+
+function adjustPitch()
+    sound:AdjustPitch(SoundEffect.SOUND_TOSS_A_COIN, pitch / 100);
 end
 
 function willThrowLuckyPenny()
@@ -112,11 +132,14 @@ function Mod:debug()
             [direction.DOWN] = Vector(10, 15)
         }
 
+        debug = pitch;
     Isaac.RenderText('headDirection:', 100, 50, 255, 0, 0, 255)
     Isaac.RenderText(headDirection, 150, 100, 255, 0, 0, 255)
     Isaac.RenderText(debug, 250, 100, 255, 0, 0, 255)
 end
 
 Mod:AddCallback( ModCallbacks.MC_POST_NEW_ROOM, Mod.tossAConsumable);
+Mod:AddCallback( ModCallbacks.MC_POST_GAME_STARTED, Mod.initMod);
 Mod:AddCallback( ModCallbacks.MC_POST_NPC_DEATH, Mod.adjustSoundOnEnemyKill);
+Mod:AddCallback( ModCallbacks.MC_PRE_PICKUP_COLLISION, Mod.adjustSoundOnLuckyPennyPickup);
 Mod:AddCallback( ModCallbacks.MC_POST_RENDER, Mod.debug); 
