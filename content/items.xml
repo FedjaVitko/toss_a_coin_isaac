@@ -1,0 +1,7 @@
+<items gfxroot="gfx/items/" version="1">
+    <trinket
+        description="Toss a coin to your Witcher"
+        gfx="toss_a_coin.png"
+        name="toss_a_coin"
+    /> 
+</items>

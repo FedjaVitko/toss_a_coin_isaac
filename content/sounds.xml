@@ -1,0 +1,5 @@
+<sounds root="sfx/">
+	<sound name ="toss_a_coin">
+		<sample weight="1" path="toss_a_coin.wav" />
+	</sound>
+</sounds>
