@@ -1,8 +1,10 @@
 local Mod = RegisterMod("toss_a_coin", 1)
-local game = Game()
-local sound = SFXManager()
-local music = MusicManager()
-local player = Isaac.GetPlayer(0)
+local game = Game();
+local sound = SFXManager();
+local music = MusicManager();
+local player = Isaac.GetPlayer(0);
+local room = game:GetRoom();
+
 local direction = {
     LEFT = 0,
     TOP = 1,
@@ -19,6 +21,8 @@ Mod.TOSS_ANGLE_MAX = 70;
 
 Mod.PENNY_CHANCE = 20;
 
+Mod.SOUND_LEVEL = 1;
+
 Mod.PITCH_INITIAL = 100;
 Mod.PITCH_FINAL = 70;
 Mod.PITCH_STEP = 8;
@@ -27,18 +31,24 @@ Mod.PITCH_MAX = 170;
 
 local pitch = Mod.PITCH_INITIAL;
 
-local debug = 'debug';
+local log = 'debug';
 
 function Mod:initMod()
+    game = Game();
+    sound = SFXManager();
+    music = MusicManager();
+    player = Isaac.GetPlayer(0);
+    room = game:GetRoom();
     stopSfxAndResumeMusic();
 end
 
 function Mod:tossAConsumable()
-    local player = Isaac.GetPlayer(0)
-    local room = game:GetRoom();
+    debug='tossAConsumable'
     if room.IsClear(room) then
         return
     end
+
+    changeSpeedInRelationToPitch();
 
     if player:HasTrinket(TrinketType.TRINKET_TOSS_A_COIN) then
         local headDirection = player:GetHeadDirection(player);
@@ -57,7 +67,8 @@ function Mod:tossAConsumable()
 
         if willThrowLuckyPenny() then
             music:Pause();
-            sound:Play(SoundEffect.SOUND_TOSS_A_COIN, 4, 0, true, pitch / 100);
+            sound:Play(SoundEffect.SOUND_TOSS_A_COIN, Mod.SOUND_LEVEL, 0, true, pitch / 100);
+
             entityType = EntityType.ENTITY_PICKUP;
             entityVariant = PickupVariant.PICKUP_COIN;
             entitySubType = CoinSubType.COIN_LUCKYPENNY;
@@ -76,6 +87,7 @@ function Mod:adjustSoundOnEnemyKill()
             stopSfxAndResumeMusic();
         else
             adjustPitch();
+            changeSpeedInRelationToPitch();
         end
     end
 end
@@ -86,6 +98,15 @@ function Mod:adjustSoundOnLuckyPennyPickup()
         pitch = math.min(pitch + Mod.PITCH_UP, Mod.PITCH_MAX);
 
         adjustPitch();
+        changeSpeedInRelationToPitch();
+    end
+end
+
+function changeSpeedInRelationToPitch()
+    if (pitch <= Mod.PITCH_INITIAL) then
+        room:SetBrokenWatchState(1) -- slow down
+    else
+        room:SetBrokenWatchState(2) -- speed up
     end
 end
 
@@ -132,10 +153,9 @@ function Mod:debug()
             [direction.DOWN] = Vector(10, 15)
         }
 
-        debug = pitch;
     Isaac.RenderText('headDirection:', 100, 50, 255, 0, 0, 255)
     Isaac.RenderText(headDirection, 150, 100, 255, 0, 0, 255)
-    Isaac.RenderText(debug, 250, 100, 255, 0, 0, 255)
+    Isaac.RenderText(log, 250, 100, 255, 0, 0, 255)
 end
 
 Mod:AddCallback( ModCallbacks.MC_POST_NEW_ROOM, Mod.tossAConsumable);
