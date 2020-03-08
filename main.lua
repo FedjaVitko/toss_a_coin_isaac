@@ -20,15 +20,15 @@ TossACoin.TOSS_POWER = 20;
 TossACoin.TOSS_ANGLE_MIN = -70;
 TossACoin.TOSS_ANGLE_MAX = 70;
 
-TossACoin.PENNY_CHANCE = 10;
+TossACoin.PENNY_CHANCE = 100;
 
 TossACoin.SOUND_LEVEL = 1;
 
 TossACoin.PITCH_INITIAL = 100;
-TossACoin.PITCH_FINAL = 70;
-TossACoin.PITCH_STEP = 8;
-TossACoin.PITCH_UP = 30;
-TossACoin.PITCH_MAX = 170;
+TossACoin.PITCH_FINAL = 95;
+TossACoin.PITCH_STEP = 1;
+TossACoin.PITCH_UP = 10;
+TossACoin.PITCH_MAX = 105;
 
 local pitch = TossACoin.PITCH_INITIAL;
 
@@ -44,11 +44,15 @@ function TossACoin:initMod()
 end
 
 function TossACoin:tossAConsumable()
+  changeSpeedInRelationToPitch();
+
   if room.IsClear(room) then
     return
   end
 
-  changeSpeedInRelationToPitch();
+  if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
+    return
+  end
 
   if player:HasTrinket(TrinketType.TRINKET_TOSS_A_COIN) then
     local entityType = EntityType.ENTITY_BOMBDROP;
@@ -64,6 +68,8 @@ function TossACoin:tossAConsumable()
         true,
         pitch / 100
       );
+
+      player:AnimateHappy();
 
       entityType = EntityType.ENTITY_PICKUP;
       entityVariant = PickupVariant.PICKUP_COIN;
@@ -107,13 +113,24 @@ function TossACoin:adjustSoundOnEnemyKill()
   end
 end
 
-function TossACoin:adjustSoundOnLuckyPennyPickup()
-  if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
-    -- TODO: only adjust pitch on lucky penny pickup
-    pitch = math.min(pitch + TossACoin.PITCH_UP, TossACoin.PITCH_MAX);
+function TossACoin:adjustSoundOnLuckyPennyPickup(pickUp)
+  if (pickUp:GetCoinValue() == 0) then -- if not a coin return
+    return
+  end
 
+  if (sound:IsPlaying(SoundEffect.SOUND_TOSS_A_COIN)) then
+    pitch = math.min(pitch + TossACoin.PITCH_UP, TossACoin.PITCH_MAX);
     adjustPitch();
     changeSpeedInRelationToPitch();
+
+    game:SpawnParticles(
+      pickUp.Position, -- position
+      EffectVariant.CRACK_THE_SKY,
+      1, -- number of particles
+      0.9, -- speed
+      Color(0.7, 0, 0, 0.5, 5, 5, 5), -- color
+      1 -- height
+    );
   end
 end
 
@@ -131,6 +148,7 @@ function stopSfxAndResumeMusic()
   sound:Stop(SoundEffect.SOUND_TOSS_A_COIN);
   music:Resume();
   pitch = TossACoin.PITCH_INITIAL;
+  changeSpeedInRelationToPitch();
 end
 
 function adjustPitch()
